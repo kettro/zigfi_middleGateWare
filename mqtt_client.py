@@ -17,19 +17,23 @@ class MQTTClient:
         # Need to then connect to the broker, sub to the mgmt topic
         return
 
-    def exec_Client():
-        self.client.connect(broker, 1883, 60)
+    def exec_client(self):
+        print "connecting to the client"
+        self.client.connect(self.broker, 1883, 60)
         # Loop
+        print "looping forever"
         #self.client.loop_start()
         self.client.loop_forever()
 
-    def on_connect(client, data, flags, rc):
+    def on_connect(self, client, data, flags, rc):
         # Subscribe to the topic in subbed_topic
-        self.client.subscribe(subbed_topic)
+        print "Connected to client, sbout to subscribe"
+        self.client.subscribe(self.subbed_topic)
         # Do other stuff...?
         return
 
-    def on_message(client, userdata, msg):
+    def on_message(self, client, userdata, msg):
+        print "message received"
         # Send the message off to the parser
         msg_dict = mp.parse(msg)
         # Save the returned topic as the reply topic

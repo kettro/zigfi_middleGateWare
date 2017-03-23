@@ -14,7 +14,7 @@ class MessageParser:
             payload:
         }
         '''
-        return
+        return json.loads(message)
 
     @staticmethod
     def encode(message):
@@ -27,4 +27,5 @@ class MessageParser:
             }
         Return a stringified JSON message
         '''
-        return
+
+        return json.dump(message)

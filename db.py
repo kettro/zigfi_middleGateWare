@@ -1,4 +1,5 @@
 from tinydb import TinyDB, Query, where
+from znetwork import ZNetwork as zn
 
 class Database(object):
     '''
@@ -24,7 +25,7 @@ class Database(object):
     get all devices that are members of a supplied group
     '''
     #CREATE
-    def create_grp(grp_name):
+    def create_grp(self, grp_name):
         '''
         Create a group with the provided Group Name
         Return the Group's EID (entry id)
@@ -32,11 +33,15 @@ class Database(object):
         Params:
             grp_name: Name of the group to be created
         '''
-        return grpTable.insert({
-            'grp_name': grp_name
-            })
+        try:
+            grp_eid = grpTable.insert({
+                'grp_name': grp_name
+                })
+        except:
+            return -1 # Error
+        return grp_eid
 
-    def create_dev(payload):
+    def create_dev(self, payload):
         '''
         Add a device with a payload Dict.
         Return the EID (entry id)
@@ -60,8 +65,12 @@ class Database(object):
         type = payload['type']
         id = payload['dev_id']
         ctrls = payload['controls']
-        value = 0 # provide scope
-        if payload['value'] is not None: value = payload['value']
+        if grpTable.get(where('grp_name') == grp) is not None:
+            return -1
+        # search the network for the device and get info on it
+        dev_data = zn.read_dev_data(id)
+        #TODO: insert the devdata into the devTable
+        #TODO: return error if no dev is found with that ieee address
 
         dev_eid = devTable.insert({
             'name': dev,
@@ -73,14 +82,14 @@ class Database(object):
             ctrlTable.insert({
                 'name': ctrl['name'],
                 'type': ctrl['type'],
-                value: value,
+                'value': value,
                 'dev_name': dev,
                 'grp_name': grp
                 })
         return dev_eid
 
     # READ
-    def read_devman(group_name):
+    def read_devman(self, group_name):
         '''
         Return all devices that match a given group
 
@@ -90,17 +99,30 @@ class Database(object):
         return devTable.search(where('grp_name') == group_name)
 
     # Returns all controls associated with a given device in a given group
-    def read_ctrlman(group, device):
-        Control = Query()
+    def read_ctrlman(self, group, device):
         return ctrlTable.search(
-                Control.dev_name == device &
-                Control.grp_name = group
+                where('dev_name') == device &
+                where('grp_name') == group
                )
 
+    def read_connman(self):
+        '''
+        Return list of all devices available on the network and also in the db
+        '''
+        manifests = read_device_manifests(False)
+        # Prune the db of the unconnected devices
+        return manifests['connected']
 
-    # Returns the manifest of all devices inside groups connected
-    def read_connman():
-        manifest = []
+    def read_unconnman(self):
+        '''
+        Return the manifest of all devices that are available on the network, but not in the db
+        '''
+        manifests = read_device_manifests(True)
+        return manifests['new_nodes']
+
+    def read_device_manifests(self, update):
+        zn_manifest = zn.read_manifest(update)
+        db_manifest = []
         groups = grpTable.all()
         for group in groups:
             grpDict = {}
@@ -109,11 +131,35 @@ class Database(object):
             for dev in grpDict['devices']:
                 ctrls = read_ctrlman(group['grp_name'], dev['name'])
                 dev['controls'] = ctrls
-            manifest.push(grpDict)
-        return manifest
+            db_manifest.push(grpDict)
+        # Check whether the devices in the db are still on the network
+        unconnected = []
+        connected = []
+        for grouping in db_manifest:
+            for device in grouping:
+                # for each device in the db
+                # Check if it is in the network too
+                for node in zn_manifest:
+                    # Check each node in the network
+                    if(node['ieee_id'] == device['id']):
+                        # If they have matching ieee ids, then they are the same
+                        # Remove the node from the zn manifest, for faster searching
+                        #TODO: set the value of the controls of the device
+                        zn_manifest.remove(node)
+                        connected.append(device)
+                if(connected.count(device) is 0):
+                    # The device was not found in the network
+                    unconnected.append(device)
+        # connected for connman, zn_manifest for unconnman
+        manifests = {
+                'connected': connected,
+                'unconnected': unconnected,
+                'new_nodes': zn_manifest
+                }
+        return manifests
 
     # UPDATE
-    def update_devdata(payload):
+    def update_devdata(self, payload):
         #assume that payload is a Dict, received from the WC
         response = {}
         grp = payload['grp_name']
@@ -131,12 +177,15 @@ class Database(object):
 
         #ctrlTable.update(updateDevData(new_name, new_value), (Ctrl.grp_name==grp_name) & (Ctrl.dev_name==dev_name) & (Ctrl.name==ctrl_name))
         #Or::
+        device_id = devTable.get(where('name') == dev & where('grp_name') == grp)['id']
+        updated_ctrl_value = zn.update_devdata(device_id, ctrl)
         Ctrl = Query()
         control = ctrlTable.get(
-                (Ctrl.grp_name==grp) &
-                (Ctrl.dev_name==dev) &
+                (Ctrl.grp_name == grp) &
+                (Ctrl.dev_name == dev) &
                 (Ctrl.name==ctrl)
                 )
+        # TODO: put the data retrieved from the network in the db, not the passed values
         control['name'] = new_name
         control['value'] = new_value
         return control
@@ -144,10 +193,6 @@ class Database(object):
 
 
     # DESTROY
-
-
-
-
 
     # get all groups currently registered
 

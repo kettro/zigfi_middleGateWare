@@ -14,80 +14,87 @@ class CommandInterpreter:
 
     def interpret(self, message):
         # Assume that the message is at this point parsed, but nothing more
-        valid = true # valid is assumed true
+        valid = True # valid is assumed true
         cmd = message['cmd']
         payload = message['payload']
         # "switch" on the cmd
-        response = cmd_switch(cmd, payload)
+        response = self.cmd_switch(cmd, payload)
 
         return response
 
-    def cmd_switch(cmd, payload):
+    def cmd_switch(self,cmd, payload):
         '''
         Doing some partial functions; splitting up the workload
         '''
         cmd_bits = cmd.split('_')
         switch = {
-                'create': create,
-                'read': read,
-                'update': update,
-                'destroy': destroy
+                'create': self.create,
+                'read': self.read,
+                'update': self.update,
+                'destroy': self.destroy
                 }
-        response = switch[cmd_bits[0]](cmd_bits(1), payload)
+        print switch[cmd_bits[0]]
+        response = switch[cmd_bits[0]](cmd_bits[1], payload)
         return { 'cmd': cmd, 'response': response }
 
-    def create(cmd, payload):
+    def create(self, cmd, payload):
         # Purely metadata: not actually doing anything to the network
         # When implemented; creating a device may change the grouping
         response = payload
         if(cmd == 'grp'):
+            # TODO: Search the db for the grp_name: invalid if not empty
             grp_name = payload['grp_name']
-            if create_grp(grp_name) is not -1:
+            if self.db.create_grp(grp_name) is not -1:
                 valid = 0
             else: valid = 4 # Create Error
         elif(cmd == 'dev'):
-            if create_dev(payload) is not -1:
+            if self.db.create_dev(payload) is not -1:
                 valid = 0
             else: valid = 4 # Create Error
-            response['']
-            break
         response['valid'] = valid
         return response
 
-    def read(cmd, payload):
+    def read(self, cmd, payload):
         response = { 'manifest': [] }
         if(cmd == 'connman'):
             # Read Manifest of all connected devices
             # Query the network for currently connected items
             # 
-            break
+            return
         elif(cmd == 'unconnman'):
-            break
+            return
         elif(cmd == 'grpman'):
-            break
+            grp_manifest = self.db.read_grpman()
+            entry = {}
+            print grp_manifest
+            for grp in grp_manifest:
+                entry = {}
+                print grp
+                entry['grp_name'] = grp['grp_name']
+                response['manifest'].append(entry)
         elif(cmd == 'devman'):
-            break
+            return
         elif(cmd == 'ctrlman'):
-            break
+            return
         elif(cmd == 'devdata'):
-            break
+            return
         return response
 
-    def update(cmd, payload):
+    def update(self, cmd, payload):
         response = payload
         if(cmd == 'grp'):
             return
         if(cmd == 'dev'):
             return
         if(cmd == 'devdata'):
-            break
+            return
         return response
 
-    def destroy(cmd, payload):
+    def destroy(self, cmd, payload):
         response = payload
         if(cmd == 'grp'):
-            break
+            return
         elif(cmd == 'dev'):
-            break
+            return
         return response
 

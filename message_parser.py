@@ -1,5 +1,6 @@
 # Imports
 import json
+from StringIO import StringIO
 
 class MessageParser:
     @staticmethod
@@ -28,4 +29,6 @@ class MessageParser:
         Return a stringified JSON message
         '''
 
-        return json.dump(message)
+        io = StringIO()
+        json.dump(message, io);
+        return io.getvalue()

@@ -14,9 +14,9 @@ class Database(object):
             dbStr: location of the tinyDB JSON file
         '''
         db = TinyDB(dbStr)
-        devTable = db.table("devices")
-        grpTable = db.table("groups")
-        ctrlTable = db.table("controls")
+        self.devTable = db.table("devices")
+        self.grpTable = db.table("groups")
+        self.ctrlTable = db.table("controls")
 
     '''
     NOTE:
@@ -34,7 +34,7 @@ class Database(object):
             grp_name: Name of the group to be created
         '''
         try:
-            grp_eid = grpTable.insert({
+            grp_eid = self.grpTable.insert({
                 'grp_name': grp_name
                 })
         except:
@@ -65,21 +65,21 @@ class Database(object):
         type = payload['type']
         id = payload['dev_id']
         ctrls = payload['controls']
-        if grpTable.get(where('grp_name') == grp) is not None:
+        if self.grpTable.get(where('grp_name') == grp) is not None:
             return -1
         # search the network for the device and get info on it
         dev_data = zn.read_dev_data(id)
         #TODO: insert the devdata into the devTable
         #TODO: return error if no dev is found with that ieee address
 
-        dev_eid = devTable.insert({
+        dev_eid = self.devTable.insert({
             'name': dev,
             'grp_name': grp,
             'id': id,
             'type': type
             })
         for ctrl in ctrls:
-            ctrlTable.insert({
+            self.ctrlTable.insert({
                 'name': ctrl['name'],
                 'type': ctrl['type'],
                 'value': value,
@@ -89,6 +89,12 @@ class Database(object):
         return dev_eid
 
     # READ
+    def read_grpman(self):
+        '''
+        Return the Manifest of all groups currently in the DB
+        '''
+        return self.grpTable.all()
+
     def read_devman(self, group_name):
         '''
         Return all devices that match a given group
@@ -96,11 +102,11 @@ class Database(object):
         Params:
             group_name: name of the devices' parent group
         '''
-        return devTable.search(where('grp_name') == group_name)
+        return self.devTable.search(where('grp_name') == group_name)
 
     # Returns all controls associated with a given device in a given group
     def read_ctrlman(self, group, device):
-        return ctrlTable.search(
+        return self.ctrlTable.search(
                 where('dev_name') == device &
                 where('grp_name') == group
                )
@@ -109,7 +115,7 @@ class Database(object):
         '''
         Return list of all devices available on the network and also in the db
         '''
-        manifests = read_device_manifests(False)
+        manifests = self.read_device_manifests(False)
         # Prune the db of the unconnected devices
         return manifests['connected']
 
@@ -117,19 +123,19 @@ class Database(object):
         '''
         Return the manifest of all devices that are available on the network, but not in the db
         '''
-        manifests = read_device_manifests(True)
+        manifests = self.read_device_manifests(True)
         return manifests['new_nodes']
 
     def read_device_manifests(self, update):
-        zn_manifest = zn.read_manifest(update)
+        zn_manifest = self.zn.read_manifest(update)
         db_manifest = []
-        groups = grpTable.all()
+        groups = self.grpTable.all()
         for group in groups:
             grpDict = {}
             grpDict['grp_name'] = group['grp_name']
-            grpDict['devices'] = read_devman(group['grp_name'])
+            grpDict['devices'] = self.read_devman(group['grp_name'])
             for dev in grpDict['devices']:
-                ctrls = read_ctrlman(group['grp_name'], dev['name'])
+                ctrls = self.read_ctrlman(group['grp_name'], dev['name'])
                 dev['controls'] = ctrls
             db_manifest.push(grpDict)
         # Check whether the devices in the db are still on the network

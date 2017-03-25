@@ -27,7 +27,7 @@ class MQTTClient:
 
     def on_connect(self, client, data, flags, rc):
         # Subscribe to the topic in subbed_topic
-        print "Connected to client, sbout to subscribe"
+        print "Connected to client, about to subscribe"
         self.client.subscribe(self.subbed_topic)
         # Do other stuff...?
         return
@@ -35,14 +35,17 @@ class MQTTClient:
     def on_message(self, client, userdata, msg):
         print "message received"
         # Send the message off to the parser
-        msg_dict = mp.parse(msg)
+        msg_dict = mp.parse(msg.payload)
+        print "message parsed"
         # Save the returned topic as the reply topic
         reply_topic = msg_dict['topic']
         # Send off to the command interpreter
         response_dict = self.ci.interpret(msg_dict)
+        print "message Interpreted"
+        print response_dict
         # Relay the response to the parser
-        response = mp.encode(
-            {'cmd': response['cmd'], 'response': response['reponse']})
+        response = mp.encode(response_dict)
+        print response
         # Finally, send off to the Broker
         self.client.publish(reply_topic, response)
         # All done

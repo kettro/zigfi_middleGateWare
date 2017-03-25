@@ -169,14 +169,6 @@ class Database(object):
         new_value = payload['value']
 
         #find the control itself:
-        #def updateDevData(name, value):
-        #    def op(element):
-        #        element['name'] = name
-        #        element['value'] = value
-        #    return op
-
-        #ctrlTable.update(updateDevData(new_name, new_value), (Ctrl.grp_name==grp_name) & (Ctrl.dev_name==dev_name) & (Ctrl.name==ctrl_name))
-        #Or::
         device_id = devTable.get(where('name') == dev & where('grp_name') == grp)['id']
         updated_ctrl_value = zn.update_devdata(device_id, ctrl)
         Ctrl = Query()
@@ -190,9 +182,42 @@ class Database(object):
         control['value'] = new_value
         return control
 
-
-
     # DESTROY
+    def destroy_grp(self, grp_name):
+        '''
+        Remove a group, and any devices and controls associated with it
+        '''
+        # use remove() to delete an element
+        # make sure to delete all ctrls and devices asociated, recursively
+        target_grp = grpTable.get(where('grp_name') == grp_name)
+
+        assoc_devices = devTable.search(where('grp_name') == grp_name)
+        assoc_ctrls = ctrlTable.search(where('grp_name') == grp_name)
+        for ctrl in assoc_ctrls:
+            ctrlTable.remove(ctrl.eid)
+        for dev in assoc_devices:
+            devTable.remove(dev.eid)
+        grpTable.remove(target_grp.eid)
+        # Remove from the network?
+        return
+
+    def destroy_dev(self, payload):
+        '''
+        Remove a device, and all controls associated with it from the table
+        '''
+        dev_name = payload['dev_name']
+        grp_name = payload['grp_name']
+        target_dev = devTable.get(
+                where('name') == dev_name &
+                where('grp_name') == grp_name)
+        assoc_ctrls = ctrlTable.search(
+                where('dev_name') == dev_name &
+                where('grp_name') == grp_name)
+        for ctrl in assoc_ctrls:
+            ctrlTable.remove(ctrl.eid)
+        devTable.remove(target_dev.eid)
+        # Remove from the network?
+        return
 
     # get all groups currently registered
 

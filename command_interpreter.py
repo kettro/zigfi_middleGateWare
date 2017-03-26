@@ -73,7 +73,15 @@ class CommandInterpreter:
                 entry['grp_name'] = grp['grp_name']
                 response['manifest'].append(entry)
         elif(cmd == 'devman'):
-            return
+            grp = payload['grp_name']
+            dev_manifest = self.db.read_devman(grp)
+            response['grp_name'] = grp
+            for dev in dev_manifest:
+                entry = {}
+                entry['name'] = dev['name']
+                entry['type'] = dev['type']
+                entry['id'] = dev['id']
+                response['manifest'].append(entry)
         elif(cmd == 'ctrlman'):
             return
         elif(cmd == 'devdata'):

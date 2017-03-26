@@ -33,6 +33,8 @@ class Database(object):
         Params:
             grp_name: Name of the group to be created
         '''
+        if self.grpTable.get(where('grp_name') == grp) is not None:
+            return -1
         try:
             grp_eid = self.grpTable.insert({
                 'grp_name': grp_name
@@ -65,10 +67,11 @@ class Database(object):
         type = payload['type']
         id = payload['dev_id']
         ctrls = payload['controls']
-        if self.grpTable.get(where('grp_name') == grp) is not None:
+        if self.grpTable.get(where('grp_name') == grp) is None:
+            return -1
+        if self.devTable.get((where('grp_name') == grp) & (where('dev_name') == dev)) is not None:
             return -1
         # search the network for the device and get info on it
-        dev_data = zn.read_dev_data(id)
         #TODO: insert the devdata into the devTable
         #TODO: return error if no dev is found with that ieee address
 
@@ -82,7 +85,7 @@ class Database(object):
             self.ctrlTable.insert({
                 'name': ctrl['name'],
                 'type': ctrl['type'],
-                'value': value,
+                'value': ctrl['value'],
                 'dev_name': dev,
                 'grp_name': grp
                 })

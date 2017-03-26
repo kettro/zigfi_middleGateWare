@@ -1,2 +1,3 @@
 # ignore JSON files = database, testing
 *.json
+*.pyc

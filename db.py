@@ -110,17 +110,29 @@ class Database(object):
     # Returns all controls associated with a given device in a given group
     def read_ctrlman(self, group, device):
         return self.ctrlTable.search(
-                where('dev_name') == device &
-                where('grp_name') == group
+                (where('dev_name') == device) &
+                (where('grp_name') == group)
                )
 
     def read_connman(self):
         '''
         Return list of all devices available on the network and also in the db
         '''
-        manifests = self.read_device_manifests(False)
-        # Prune the db of the unconnected devices
-        return manifests['connected']
+        db_manifest = []
+        groups = self.grpTable.all()
+        for group in groups:
+            print group
+            grpDict = {}
+            grpDict['grp_name'] = group['grp_name']
+            grpDict['devices'] = self.read_devman(group['grp_name'])
+            for dev in grpDict['devices']:
+                print dev
+                ctrls = self.read_ctrlman(group['grp_name'], dev['name'])
+                print ctrls
+                dev['controls'] = ctrls
+            db_manifest.append(grpDict)
+        #TODO: Begin a commission
+        return db_manifest
 
     def read_unconnman(self):
         '''
@@ -178,7 +190,7 @@ class Database(object):
         new_value = payload['value']
 
         #find the control itself:
-        device_id = devTable.get(where('name') == dev & where('grp_name') == grp)['id']
+        device_id = devTable.get((where('name') == dev) & (where('grp_name') == grp))['id']
         updated_ctrl_value = zn.update_devdata(device_id, ctrl)
         Ctrl = Query()
         control = ctrlTable.get(
@@ -217,11 +229,11 @@ class Database(object):
         dev_name = payload['dev_name']
         grp_name = payload['grp_name']
         target_dev = devTable.get(
-                where('name') == dev_name &
-                where('grp_name') == grp_name)
+                (where('name') == dev_name) &
+                (where('grp_name') == grp_name))
         assoc_ctrls = ctrlTable.search(
-                where('dev_name') == dev_name &
-                where('grp_name') == grp_name)
+                (where('dev_name') == dev_name) &
+                (where('grp_name') == grp_name))
         for ctrl in assoc_ctrls:
             ctrlTable.remove(ctrl.eid)
         devTable.remove(target_dev.eid)

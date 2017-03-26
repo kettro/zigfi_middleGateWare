@@ -59,8 +59,8 @@ class CommandInterpreter:
         if(cmd == 'connman'):
             # Read Manifest of all connected devices
             # Query the network for currently connected items
-            # 
-            return
+
+            response['manifest'] = self.db.read_connman()
         elif(cmd == 'unconnman'):
             return
         elif(cmd == 'grpman'):

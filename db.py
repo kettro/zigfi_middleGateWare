@@ -69,7 +69,9 @@ class Database(object):
         ctrls = payload['controls']
         if self.grpTable.get(where('grp_name') == grp) is None:
             return -1
-        if self.devTable.get((where('grp_name') == grp) & (where('dev_name') == dev)) is not None:
+        if self.devTable.get(
+                (where('grp_name') == grp) &
+                (where('dev_name') == dev)) is not None:
             return -1
         # search the network for the device and get info on it
         #TODO: insert the devdata into the devTable
@@ -136,13 +138,14 @@ class Database(object):
 
     def read_unconnman(self):
         '''
-        Return the manifest of all devices that are available on the network, but not in the db
+        Return the manifest of all devices that are available on
+        the network, but not in the db
         '''
-        manifests = self.read_device_manifests(True)
+        manifests = self.read_network_manifests()
         return manifests['new_nodes']
 
-    def read_device_manifests(self, update):
-        zn_manifest = self.zn.read_manifest(update)
+    def read_network_manifests(self):
+        zn_manifest = self.zn.read_manifest()
         db_manifest = []
         groups = self.grpTable.all()
         for group in groups:
@@ -190,7 +193,9 @@ class Database(object):
         new_value = payload['value']
 
         #find the control itself:
-        device_id = devTable.get((where('name') == dev) & (where('grp_name') == grp))['id']
+        device_id = devTable.get(
+                (where('name') == dev) &
+                (where('grp_name') == grp))['id']
         updated_ctrl_value = zn.update_devdata(device_id, ctrl)
         Ctrl = Query()
         control = ctrlTable.get(
@@ -219,7 +224,7 @@ class Database(object):
         for dev in assoc_devices:
             devTable.remove(dev.eid)
         grpTable.remove(target_grp.eid)
-        # Remove from the network?
+        # Remove from the network? => send a decommission request
         return
 
     def destroy_dev(self, payload):

@@ -42,7 +42,6 @@ class MQTTClient:
         # Send off to the command interpreter
         response_dict = self.ci.interpret(msg_dict)
         print "message Interpreted"
-        print response_dict
         # Relay the response to the parser
         response = mp.encode(response_dict)
         print response

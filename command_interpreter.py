@@ -2,7 +2,12 @@
 from db import Database
 
 class CommandInterpreter:
+    '''
+    '''
     def __init__(self):
+        '''
+        Initialize the database
+        '''
         # Instantiate the Database
         self.db = Database('db.json')
         return
@@ -13,31 +18,44 @@ class CommandInterpreter:
     # Needs a sort of translation table?
 
     def interpret(self, message):
+        '''
+        Public access to interpreter utility
+        Process the message, and produce a response
+        Params:
+            message: Parsed message dict, with cmd and payload fields
+        Return a dict with fields specific to the cmd
+        '''
         # Assume that the message is at this point parsed, but nothing more
-        valid = True # valid is assumed true
         cmd = message['cmd']
         payload = message['payload']
         # "switch" on the cmd
-        response = self.cmd_switch(cmd, payload)
+        response = self.__cmd_switch(cmd, payload)
 
         return response
 
-    def cmd_switch(self,cmd, payload):
+    def __cmd_switch(self,cmd, payload):
         '''
         Doing some partial functions; splitting up the workload
         '''
         cmd_bits = cmd.split('_')
         switch = {
-                'create': self.create,
-                'read': self.read,
-                'update': self.update,
-                'destroy': self.destroy
+                'create': self.__create,
+                'read': self.__read,
+                'update': self.__update,
+                'destroy': self.__destroy
                 }
         print switch[cmd_bits[0]]
         response = switch[cmd_bits[0]](cmd_bits[1], payload)
         return { 'cmd': cmd, 'response': response }
 
-    def create(self, cmd, payload):
+    def __create(self, cmd, payload):
+        '''
+        Execute the Create commands, based on the cmd; Private access
+        Params:
+            cmd: Command to be executed, part of the original cmd passed
+            payload: arguments passed along with the cmd, specific to the cmd.
+        Returns: Response dict to be added as the response in the reply packet
+        '''
         # Purely metadata: not actually doing anything to the network
         # When implemented; creating a device may change the grouping
         response = payload
@@ -54,7 +72,14 @@ class CommandInterpreter:
         response['valid'] = valid
         return response
 
-    def read(self, cmd, payload):
+    def __read(self, cmd, payload):
+        '''
+        Execute the Read commands, based on the cmd; Private access
+        Params:
+            cmd: Command to be executed, part of the original cmd passed
+            payload: arguments passed along with the cmd, specific to the cmd.
+        Returns: Response dict to be added as the response in the reply packet
+        '''
         response = { 'manifest': [] }
         if(cmd == 'connman'):
             # Read Manifest of all connected devices
@@ -88,7 +113,14 @@ class CommandInterpreter:
             return
         return response
 
-    def update(self, cmd, payload):
+    def __update(self, cmd, payload):
+        '''
+        Execute the Update commands, based on the cmd; Private access
+        Params:
+            cmd: Command to be executed, part of the original cmd passed
+            payload: arguments passed along with the cmd, specific to the cmd.
+        Returns: Response dict to be added as the response in the reply packet
+        '''
         response = payload
         if(cmd == 'grp'):
             return
@@ -98,7 +130,14 @@ class CommandInterpreter:
             return
         return response
 
-    def destroy(self, cmd, payload):
+    def __destroy(self, cmd, payload):
+        '''
+        Execute the Destroy commands, based on the cmd; Private access
+        Params:
+            cmd: Command to be executed, part of the original cmd passed
+            payload: arguments passed along with the cmd, specific to the cmd.
+        Returns: Response dict to be added as the response in the reply packet
+        '''
         response = payload
         if(cmd == 'grp'):
             return

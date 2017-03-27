@@ -20,3 +20,8 @@ class ZNetwork:
         # Return the manifest of the network
         # update: whether or not to request an update on the network
         return manifest
+
+    @staticmethod
+    def send_commission():
+        # Send a commission request to the network
+        return

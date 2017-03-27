@@ -1,5 +1,6 @@
 from tinydb import TinyDB, Query, where
-from znetwork import ZNetwork as zn
+from znetwork import ZNetwork
+from pydispatch import dispatcher
 
 class Database(object):
     '''
@@ -9,21 +10,83 @@ class Database(object):
     def __init__(self, dbStr):
         '''
         Initialize the tinyDB, the devTable, grpTable, and ctrlTable
-
         Params:
             dbStr: location of the tinyDB JSON file
         '''
+        # Initialize the DB
         db = TinyDB(dbStr)
         self.devTable = db.table("devices")
         self.grpTable = db.table("groups")
         self.ctrlTable = db.table("controls")
+        self.unconnTable = db.table("unconn")
+        # Initialize the IPC for the network
+        self.id_sig = "Database"
+        self.unconn_sig = "unconn_db_sig"
+        self.val_sig = "db_val_sig"
+        self.zn = ZNetwork(self.unconn_sig, self.val_sig)
+        dispatcher.connect(
+                self.update_unconn_db,
+                signal=self.unconn_sig,
+                sender=dispatcher.Any)
+        dispatcher.connect(
+                self.update_dev_value,
+                signal=self.val_sig,
+                sender=dispatcher.Any)
 
-    '''
-    NOTE:
-    Assume that all actions are already valid
-    Assume all functions are after receiving information from the network
-    get all devices that are members of a supplied group
-    '''
+    def update_unconn_db(self, sender, manifest):
+        # Updating the database with the list of devices in the network
+        db_dev_list = self.devTable.all()
+        configured = []
+        unconfigured = []
+        removed = []
+        for db_dev in db_dev_list:
+            matched = False
+            for net_dev in manifest:
+                # Attempt to match the ids
+                if net_dev['ieee_addr'] == db_dev['id']:
+                    # Match found
+                    matched = True
+                    configured.push(db_dev)
+                    db_dev_list.remove(db_dev)
+                    manifest.remove(net_dev)
+                    break
+            if matched:
+                break
+            else:
+                # dev not found
+                removed.push(db_dev)
+                db_dev_list.remove(db_dev)
+        # What is left in the manifest is the unconfigured list
+        unconfigured = manifest
+
+        # Update unconnTable
+        for dev in unconfigured:
+            # Check if already in table
+            # if already in table, ignore.
+            # else, insert
+            if self.unconnTable.get(where('ieee_addr') == dev['ieee_addr']) is None:
+                self.unconnTable.insert(dev)
+
+        # Update the devTable
+        for dev in removed:
+            self.destroy_dev({
+                'grp_name': dev['grp_name'],
+                'dev_name': dev['name']
+                })
+        return
+
+    def update_dev_value(self, sender, devdata):
+        '''
+        Update the values of the controls in a given control
+        May or may not be necessary; used for response to an update_devdata
+        '''
+        # unpack the Dict
+        dev_id = devdata['id']
+        error_code = devdata['error_code']
+        ctrl_type = devdata['ctrl_type']
+        value = devdata['value']
+        return
+
     #CREATE
     def create_grp(self, grp_name):
         '''
@@ -47,7 +110,6 @@ class Database(object):
         '''
         Add a device with a payload Dict.
         Return the EID (entry id)
-
         Params:
             payload: Dict = {
                 grp_name: Group Name,
@@ -73,9 +135,13 @@ class Database(object):
                 (where('grp_name') == grp) &
                 (where('dev_name') == dev)) is not None:
             return -1
-        # search the network for the device and get info on it
-        #TODO: insert the devdata into the devTable
-        #TODO: return error if no dev is found with that ieee address
+        # Search the unconnTable for the device, and pop it out
+        unconn_dev = unconnTable.get(where('ieee_addr') == id)
+        if unconn_dev is None:
+            #error
+            print "Error: unfound in table"
+            return -1
+        unconnTable.remove(unconn_dev.eid)
 
         dev_eid = self.devTable.insert({
             'name': dev,
@@ -87,7 +153,7 @@ class Database(object):
             self.ctrlTable.insert({
                 'name': ctrl['name'],
                 'type': ctrl['type'],
-                'value': ctrl['value'],
+                'value': ctrl.get('value', None),
                 'dev_name': dev,
                 'grp_name': grp
                 })
@@ -109,8 +175,8 @@ class Database(object):
         '''
         return self.devTable.search(where('grp_name') == group_name)
 
-    # Returns all controls associated with a given device in a given group
     def read_ctrlman(self, group, device):
+        # Returns all controls associated with a given device in a given group
         return self.ctrlTable.search(
                 (where('dev_name') == device) &
                 (where('grp_name') == group)
@@ -133,7 +199,7 @@ class Database(object):
                 print ctrls
                 dev['controls'] = ctrls
             db_manifest.append(grpDict)
-        #TODO: Begin a commission
+        #TODO: Begin a commission?
         return db_manifest
 
     def read_unconnman(self):
@@ -141,46 +207,16 @@ class Database(object):
         Return the manifest of all devices that are available on
         the network, but not in the db
         '''
-        manifests = self.read_network_manifests()
-        return manifests['new_nodes']
-
-    def read_network_manifests(self):
-        zn_manifest = self.zn.read_manifest()
-        db_manifest = []
-        groups = self.grpTable.all()
-        for group in groups:
-            grpDict = {}
-            grpDict['grp_name'] = group['grp_name']
-            grpDict['devices'] = self.read_devman(group['grp_name'])
-            for dev in grpDict['devices']:
-                ctrls = self.read_ctrlman(group['grp_name'], dev['name'])
-                dev['controls'] = ctrls
-            db_manifest.push(grpDict)
-        # Check whether the devices in the db are still on the network
-        unconnected = []
-        connected = []
-        for grouping in db_manifest:
-            for device in grouping:
-                # for each device in the db
-                # Check if it is in the network too
-                for node in zn_manifest:
-                    # Check each node in the network
-                    if(node['ieee_id'] == device['id']):
-                        # If they have matching ieee ids, then they are the same
-                        # Remove the node from the zn manifest, for faster searching
-                        #TODO: set the value of the controls of the device
-                        zn_manifest.remove(node)
-                        connected.append(device)
-                if(connected.count(device) is 0):
-                    # The device was not found in the network
-                    unconnected.append(device)
-        # connected for connman, zn_manifest for unconnman
-        manifests = {
-                'connected': connected,
-                'unconnected': unconnected,
-                'new_nodes': zn_manifest
-                }
-        return manifests
+        unconn_manifest = []
+        unconns = self.unconnTable.all()
+        for unconn in unconns:
+            print unconn
+            ucDict = {
+                    'id': unconn['ieee_addr'],
+                    'type': unconn['type']
+                    }
+            unconn_manifest.push(ucDict)
+        return unconn_manifest
 
     # UPDATE
     def update_devdata(self, payload):
@@ -189,24 +225,36 @@ class Database(object):
         grp = payload['grp_name']
         dev = payload['dev_name']
         ctrl = payload['ctrl_name']
-        new_name = payload['name']
-        new_value = payload['value']
+        new_name = payload.get('name', None) # Optional argument: None if omitted
+        new_value = payload.get('value', None) # Optional argument: None if omitted
 
         #find the control itself:
         device_id = devTable.get(
                 (where('name') == dev) &
                 (where('grp_name') == grp))['id']
-        updated_ctrl_value = zn.update_devdata(device_id, ctrl)
-        Ctrl = Query()
+
         control = ctrlTable.get(
-                (Ctrl.grp_name == grp) &
-                (Ctrl.dev_name == dev) &
-                (Ctrl.name==ctrl)
+                (where('grp_name') == grp) &
+                (where('dev_name') == dev) &
+                (where('name') == ctrl))
+
+        # Send a update to the network
+        dispatcher.send(
+                signal=self.zn.update_devdata_sig,
+                sender=self.id_sig,
+                device=device_id,
+                control_data={
+                    'type': control.type,
+                    'value': new_value
+                    }
                 )
-        # TODO: put the data retrieved from the network in the db, not the passed values
-        control['name'] = new_name
-        control['value'] = new_value
-        return control
+        ctrl_eids = ctrlTable.update({ 'value': new_value }, control.eid)
+        if ctrl_eids == []:
+            return -1
+        else:
+            return ctrl_eids[0]
+
+    # update_dev & update_grp
 
     # DESTROY
     def destroy_grp(self, grp_name):
@@ -244,8 +292,3 @@ class Database(object):
         devTable.remove(target_dev.eid)
         # Remove from the network?
         return
-
-    # get all groups currently registered
-
-    # get all controls for a given device
-

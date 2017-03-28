@@ -1,6 +1,7 @@
-from tinydb import TinyDB, Query, where
+from tinydb import TinyDB, where
 from znetwork import ZNetwork
 from pydispatch import dispatcher
+
 
 class Database(object):
     '''
@@ -64,8 +65,9 @@ class Database(object):
             # Check if already in table
             # if already in table, ignore.
             # else, insert
-            if self.unconnTable.get(where('ieee_addr') == dev['ieee_addr']) is None:
-                self.unconnTable.insert(dev)
+            id = dev['ieee_addr']
+            if self.unconnTable.get(where('ieee_addr') == id) is None:
+                    self.unconnTable.insert(dev)
 
         # Update the devTable
         for dev in removed:
@@ -81,13 +83,19 @@ class Database(object):
         May or may not be necessary; used for response to an update_devdata
         '''
         # unpack the Dict
-        dev_id = devdata['id']
-        error_code = devdata['error_code']
-        ctrl_type = devdata['ctrl_type']
-        value = devdata['value']
+        # dev_id = devdata['id']
+        # valid = devdata['valid']
+        # ctrl_type = devdata['ctrl_type']
+        # value = devdata['value']
         return
 
-    #CREATE
+    def send_commission_request(self):
+        dispatcher.send(
+            signal=self.zn.update_commissions_sig,
+            sender=self.id_sig
+        )
+
+    # CREATE
     def create_grp(self, grp_name):
         '''
         Create a group with the provided Group Name
@@ -96,14 +104,14 @@ class Database(object):
         Params:
             grp_name: Name of the group to be created
         '''
-        if self.grpTable.get(where('grp_name') == grp) is not None:
+        if self.grpTable.get(where('grp_name') == grp_name) is not None:
             return -1
         try:
             grp_eid = self.grpTable.insert({
                 'grp_name': grp_name
                 })
         except:
-            return -1 # Error
+            return -1  # Error
         return grp_eid
 
     def create_dev(self, payload):
@@ -136,12 +144,12 @@ class Database(object):
                 (where('dev_name') == dev)) is not None:
             return -1
         # Search the unconnTable for the device, and pop it out
-        unconn_dev = unconnTable.get(where('ieee_addr') == id)
+        unconn_dev = self.unconnTable.get(where('ieee_addr') == id)
         if unconn_dev is None:
-            #error
+            # error
             print "Error: unfound in table"
             return -1
-        unconnTable.remove(unconn_dev.eid)
+        self.unconnTable.remove(unconn_dev.eid)
 
         dev_eid = self.devTable.insert({
             'name': dev,
@@ -199,7 +207,8 @@ class Database(object):
                 print ctrls
                 dev['controls'] = ctrls
             db_manifest.append(grpDict)
-        #TODO: Begin a commission?
+        # Begin a commission
+        self.send_commission_request
         return db_manifest
 
     def read_unconnman(self):
@@ -220,35 +229,40 @@ class Database(object):
 
     # UPDATE
     def update_devdata(self, payload):
-        #assume that payload is a Dict, received from the WC
-        response = {}
+        # assume that payload is a Dict, received from the WC
         grp = payload['grp_name']
         dev = payload['dev_name']
         ctrl = payload['ctrl_name']
-        new_name = payload.get('name', None) # Optional argument: None if omitted
-        new_value = payload.get('value', None) # Optional argument: None if omitted
+        new_name = payload.get('name', None)  # Optional argument: else None
+        new_value = payload.get('value', None)  # Optional argument: else None
 
-        #find the control itself:
-        device_id = devTable.get(
-                (where('name') == dev) &
-                (where('grp_name') == grp))['id']
+        # find the control itself:
+        device_id = self.devTable.get(
+            (where('name') == dev) &
+            (where('grp_name') == grp))['id']
 
-        control = ctrlTable.get(
-                (where('grp_name') == grp) &
-                (where('dev_name') == dev) &
-                (where('name') == ctrl))
+        control = self.ctrlTable.get(
+            (where('grp_name') == grp) &
+            (where('dev_name') == dev) &
+            (where('name') == ctrl))
 
         # Send a update to the network
         dispatcher.send(
-                signal=self.zn.update_devdata_sig,
-                sender=self.id_sig,
-                device=device_id,
-                control_data={
-                    'type': control.type,
-                    'value': new_value
-                    }
-                )
-        ctrl_eids = ctrlTable.update({ 'value': new_value }, control.eid)
+            signal=self.zn.update_devdata_sig,
+            sender=self.id_sig,
+            device=device_id,
+            control_data={
+                'type': control.type,
+                'value': new_value
+            }
+        )
+        if new_name is not None:
+            ctrl_eids = self.ctrlTable.update(
+                {'name': new_name}, control.eid)
+        if new_value is not None:
+            ctrl_eids = self.ctrlTable.update(
+                {'value': new_value}, control.eid)
+
         if ctrl_eids == []:
             return -1
         else:
@@ -263,15 +277,15 @@ class Database(object):
         '''
         # use remove() to delete an element
         # make sure to delete all ctrls and devices asociated, recursively
-        target_grp = grpTable.get(where('grp_name') == grp_name)
+        target_grp = self.grpTable.get(where('grp_name') == grp_name)
 
-        assoc_devices = devTable.search(where('grp_name') == grp_name)
-        assoc_ctrls = ctrlTable.search(where('grp_name') == grp_name)
+        assoc_devices = self.devTable.search(where('grp_name') == grp_name)
+        assoc_ctrls = self.ctrlTable.search(where('grp_name') == grp_name)
         for ctrl in assoc_ctrls:
-            ctrlTable.remove(ctrl.eid)
+            self.ctrlTable.remove(ctrl.eid)
         for dev in assoc_devices:
-            devTable.remove(dev.eid)
-        grpTable.remove(target_grp.eid)
+            self.devTable.remove(dev.eid)
+        self.grpTable.remove(target_grp.eid)
         # Remove from the network? => send a decommission request
         return
 
@@ -281,14 +295,14 @@ class Database(object):
         '''
         dev_name = payload['dev_name']
         grp_name = payload['grp_name']
-        target_dev = devTable.get(
+        target_dev = self.devTable.get(
                 (where('name') == dev_name) &
                 (where('grp_name') == grp_name))
-        assoc_ctrls = ctrlTable.search(
+        assoc_ctrls = self.ctrlTable.search(
                 (where('dev_name') == dev_name) &
                 (where('grp_name') == grp_name))
         for ctrl in assoc_ctrls:
-            ctrlTable.remove(ctrl.eid)
-        devTable.remove(target_dev.eid)
+            self.ctrlTable.remove(ctrl.eid)
+        self.devTable.remove(target_dev.eid)
         # Remove from the network?
         return

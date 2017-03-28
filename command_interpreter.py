@@ -1,5 +1,5 @@
-# Imports
 from db import Database
+
 
 class CommandInterpreter:
     '''
@@ -11,11 +11,6 @@ class CommandInterpreter:
         # Instantiate the Database
         self.db = Database('db.json')
         return
-
-    # Honestly, I think that maybe the db should be in charge of interfacing with
-    # the ZNetwork. It is going to end up being the one that actually does the thing anyways...
-    # Has functions to interpret incoming commands
-    # Needs a sort of translation table?
 
     def interpret(self, message):
         '''
@@ -33,20 +28,20 @@ class CommandInterpreter:
 
         return response
 
-    def __cmd_switch(self,cmd, payload):
+    def __cmd_switch(self, cmd, payload):
         '''
         Doing some partial functions; splitting up the workload
         '''
         cmd_bits = cmd.split('_')
         switch = {
-                'create': self.__create,
-                'read': self.__read,
-                'update': self.__update,
-                'destroy': self.__destroy
-                }
+            'create': self.__create,
+            'read': self.__read,
+            'update': self.__update,
+            'destroy': self.__destroy
+        }
         print switch[cmd_bits[0]]
         response = switch[cmd_bits[0]](cmd_bits[1], payload)
-        return { 'cmd': cmd, 'response': response }
+        return {'cmd': cmd, 'response': response}
 
     def __create(self, cmd, payload):
         '''
@@ -64,11 +59,13 @@ class CommandInterpreter:
             grp_name = payload['grp_name']
             if self.db.create_grp(grp_name) is not -1:
                 valid = 0
-            else: valid = 4 # Create Error
+            else:
+                valid = 4  # Create Error
         elif(cmd == 'dev'):
             if self.db.create_dev(payload) is not -1:
                 valid = 0
-            else: valid = 4 # Create Error
+            else:
+                valid = 4  # Create Error
         response['valid'] = valid
         return response
 
@@ -80,13 +77,14 @@ class CommandInterpreter:
             payload: arguments passed along with the cmd, specific to the cmd.
         Returns: Response dict to be added as the response in the reply packet
         '''
-        response = { 'manifest': [] }
+        response = {'manifest': []}
         if(cmd == 'connman'):
             # Read Manifest of all connected devices
             # Query the network for currently connected items
 
             response['manifest'] = self.db.read_connman()
         elif(cmd == 'unconnman'):
+            response['manifest'] = self.db.read_unconnman()
             return
         elif(cmd == 'grpman'):
             grp_manifest = self.db.read_grpman()
@@ -127,6 +125,7 @@ class CommandInterpreter:
         if(cmd == 'dev'):
             return
         if(cmd == 'devdata'):
+            self.db.update_devdata(payload)
             return
         return response
 
@@ -144,4 +143,3 @@ class CommandInterpreter:
         elif(cmd == 'dev'):
             return
         return response
-

@@ -257,7 +257,7 @@ class Database(object):
             sender=self.id_sig,
             device=device_id,
             control_data={
-                'type': control.type,
+                'type': control.get('type'),
                 'value': new_value
             }
         )

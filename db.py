@@ -173,6 +173,7 @@ class Database(object):
         '''
         Return the Manifest of all groups currently in the DB
         '''
+        print "Read Grpman"
         return self.grpTable.all()
 
     def read_devman(self, group_name):
@@ -219,6 +220,7 @@ class Database(object):
         '''
         unconn_manifest = []
         unconns = self.unconnTable.all()
+        print unconns
         for unconn in unconns:
             print unconn
             ucDict = {

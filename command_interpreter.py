@@ -39,7 +39,6 @@ class CommandInterpreter:
             'update': self.__update,
             'destroy': self.__destroy
         }
-        print switch[cmd_bits[0]]
         response = switch[cmd_bits[0]](cmd_bits[1], payload)
         return {'cmd': cmd, 'response': response}
 

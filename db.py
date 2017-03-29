@@ -91,6 +91,7 @@ class Database(object):
         return
 
     def send_commission_request(self):
+        print "Sending  Commission Request to the ZNetwork"
         dispatcher.send(
             signal=self.zn.update_commissions_sig,
             sender=self.id_sig
@@ -220,7 +221,7 @@ class Database(object):
         '''
         unconn_manifest = []
         unconns = self.unconnTable.all()
-        print unconns
+        print "Printing the unconns:", unconns
         for unconn in unconns:
             print unconn
             ucDict = {

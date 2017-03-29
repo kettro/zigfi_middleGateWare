@@ -73,6 +73,8 @@ class ZNetwork:
                 ieee_addr: IEEE Address for identification purposes
                 type: device type
         '''
+        print "sending data to the DB for UNCONN"
+        print "manifest = ", _manifest
         dispatcher.send(
             signal=self.update_unconn_signal,
             sender=self.id_sig,

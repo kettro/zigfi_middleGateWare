@@ -38,11 +38,11 @@ class ZNetwork:
         # Format the arguments of commands
         arg_switch = {
             'ON/OFF': {
-                'arg1': int(arg1) & 0x01,
+                'arg1': str(int(arg1) & 0x01),
                 'arg2': arg2
             },
             'LEVEL': {
-                'arg1': int((arg1/10.0) * 0xFF),
+                'arg1': str(int((arg1/10.0) * 0xFF)),
                 'arg2': arg2
             }
         }
@@ -62,8 +62,6 @@ class ZNetwork:
             'QUIT': '10',
             'CLIENT_UPDATE': '11'
         }
-        if(ieee_addr != '-1'):
-            ieee_addr = hex(ieee_addr).split('x')[1]
         return '-'.join([ieee_addr, cmd_switch[cmd], arg1, arg2])
 
     def update_unconn_db(self, _manifest):
@@ -121,11 +119,13 @@ class ZNetwork:
         if args is None:
             return  # poorly formatted
         command = self.build_command(cmd, device, args['arg1'], args['arg2'])
-        #self.sock.send(command)
+        # Send off the command to the socket and wait
+        # Potentially wait more than once: haven't fully tested.
+        self.sock.send(command)
         message = self.sock.recv(1024)
         print message
         self.receive_non_commission_msg(message)
-        # Send a commission request, just because
+        # Send a commission request, because why not
         self.update_commissions_listener(None)
         return
 

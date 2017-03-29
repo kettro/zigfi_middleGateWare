@@ -48,7 +48,7 @@ class Database(object):
                 if net_dev['ieee_addr'] == db_dev['id']:
                     # Match found
                     matched = True
-                    configured.push(db_dev)
+                    configured.append(db_dev)
                     db_dev_list.remove(db_dev)
                     manifest.remove(net_dev)
                     break
@@ -56,7 +56,7 @@ class Database(object):
                 break
             else:
                 # dev not found
-                removed.push(db_dev)
+                removed.append(db_dev)
                 db_dev_list.remove(db_dev)
         # What is left in the manifest is the unconfigured list
         unconfigured = manifest
@@ -228,7 +228,7 @@ class Database(object):
                     'id': unconn.get('ieee_addr'),
                     'type': unconn.get('type', None)
                     }
-            unconn_manifest.push(ucDict)
+            unconn_manifest.append(ucDict)
         return unconn_manifest
 
     # UPDATE

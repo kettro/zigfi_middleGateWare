@@ -36,6 +36,7 @@ class Database(object):
 
     def update_unconn_db(self, sender, manifest):
         # Updating the database with the list of devices in the network
+        print "Updating Unconn DB"
         db_dev_list = self.devTable.all()
         configured = []
         unconfigured = []

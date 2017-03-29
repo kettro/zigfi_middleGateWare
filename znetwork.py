@@ -17,7 +17,7 @@ class ZNetwork:
         self.update_values = val_sig
         # Set up the Socket layer
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        self.sock.connect('./socket_IPC')
+        self.sock.connect('../servers/socket_IPC')
         # Send a commission!
         self.update_commissions_listener(None)
         # Connect up the signals to the listeners
@@ -126,13 +126,17 @@ class ZNetwork:
 
     def update_commissions_listener(self, sender):
         # Call the commission update
+        print "Updating Commissions"
         command_string = self.build_command('PERMIT_JOIN')
+        print command_string
         # send off to the socket
         self.sock.send(command_string)
         message = repr(self.sock.recv(1024))
+        print message
         # Parse the received message
         items = message.split('|')
         if len(items) == 1:
+            print "Router is off: canceling commission update"
             return  # Router is off
         endpoints = items[2:]  # Grab the relevant items
         ep_dict = []

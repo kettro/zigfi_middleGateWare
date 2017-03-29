@@ -7,6 +7,15 @@ the given device, and receive and send commands out to and from the client.
 On the receipt of a command, the command must be parsed, and the proper action
 taken with the values. The "Proper Action" will be described here.
 
+## Dependencies:
+This project uses as dependencies:
+* python 2.7.x
+* tinyDB
+* pydispatcher
+* paho-mqtt
+
+All of which can be installed via pip
+
 ## Database
 The middleware uses TinyDB as a database. It was chosen due to its No-SQL
 nature, easy configuration, and lightweight nature (especially in  the space

@@ -135,7 +135,7 @@ class ZNetwork:
         join_confirm = self.sock.recv(1024)
         print join_confirm
         command_string = self.build_command('CLIENT_UPDATE')
-        time.sleep(10*100)
+        time.sleep(10)
         message = self.sock.recv(1024)
         print message
         # Parse the received message

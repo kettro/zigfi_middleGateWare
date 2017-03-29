@@ -151,7 +151,7 @@ class Database(object):
             # error
             print "Error: unfound in table"
             return -1
-        self.unconnTable.remove(unconn_dev.eid)
+        self.unconnTable.remove(eids=[unconn_dev.eid])
 
         dev_eid = self.devTable.insert({
             'name': dev,
@@ -286,11 +286,15 @@ class Database(object):
 
         assoc_devices = self.devTable.search(where('grp_name') == grp_name)
         assoc_ctrls = self.ctrlTable.search(where('grp_name') == grp_name)
+        rm_eids = []
         for ctrl in assoc_ctrls:
-            self.ctrlTable.remove(ctrl.eid)
+            rm_eids.append(ctrl.eid)
+        self.ctrlTable.remove(eids=rm_eids)
+        rm_eids = []
         for dev in assoc_devices:
-            self.devTable.remove(dev.eid)
-        self.grpTable.remove(target_grp.eid)
+            rm_eids.append(dev.eid)
+        self.devTable.remove(eids=rm_eids)
+        self.grpTable.remove(eids=[target_grp.eid])
         # Remove from the network? => send a decommission request
         return
 
@@ -306,8 +310,10 @@ class Database(object):
         assoc_ctrls = self.ctrlTable.search(
                 (where('dev_name') == dev_name) &
                 (where('grp_name') == grp_name))
+        rm_eids = []
         for ctrl in assoc_ctrls:
-            self.ctrlTable.remove(ctrl.eid)
-        self.devTable.remove(target_dev.eid)
+            rm_eids.append(ctrl.eid)
+        self.ctrlTable.remove(eids=rm_eids)
+        self.devTable.remove(eids=[target_dev.eid])
         # Remove from the network?
         return

@@ -229,6 +229,7 @@ class Database(object):
                     'type': unconn.get('type', None)
                     }
             unconn_manifest.append(ucDict)
+        print unconn_manifest
         return unconn_manifest
 
     # UPDATE

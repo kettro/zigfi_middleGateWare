@@ -84,7 +84,6 @@ class CommandInterpreter:
             response['manifest'] = self.db.read_connman()
         elif(cmd == 'unconnman'):
             response['manifest'] = self.db.read_unconnman()
-            return
         elif(cmd == 'grpman'):
             grp_manifest = self.db.read_grpman()
             entry = {}

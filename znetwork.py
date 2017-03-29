@@ -1,5 +1,6 @@
 from pydispatch import dispatcher
 import socket
+import time
 # import os
 
 
@@ -131,7 +132,11 @@ class ZNetwork:
         print command_string
         # send off to the socket
         self.sock.send(command_string)
-        message = repr(self.sock.recv(1024))
+        join_confirm = self.sock.recv(1024)
+        print join_confirm
+        command_string = self.build_command('CLIENT_UPDATE')
+        time.sleep(10*100)
+        message = self.sock.recv(1024)
         print message
         # Parse the received message
         items = message.split('|')

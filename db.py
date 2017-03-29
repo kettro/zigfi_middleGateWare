@@ -225,8 +225,8 @@ class Database(object):
         for unconn in unconns:
             print unconn
             ucDict = {
-                    'id': unconn['ieee_addr'],
-                    'type': unconn['type']
+                    'id': unconn.get('ieee_addr'),
+                    'type': unconn.get('type', None)
                     }
             unconn_manifest.push(ucDict)
         return unconn_manifest

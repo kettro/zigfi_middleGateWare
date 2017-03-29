@@ -136,7 +136,7 @@ class Database(object):
         # Unpack the Dict
         grp = payload['grp_name']
         dev = payload['dev_name']
-        type = payload['type']
+        type = payload.get('type')  # Safe getting, as is optional
         id = payload['dev_id']
         ctrls = payload['controls']
         if self.grpTable.get(where('grp_name') == grp) is None:

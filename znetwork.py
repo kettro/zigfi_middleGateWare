@@ -62,6 +62,8 @@ class ZNetwork:
             'QUIT': '10',
             'CLIENT_UPDATE': '11'
         }
+        if(ieee_addr != '-1'):
+            ieee_addr = hex(ieee_addr).split('x')[1]
         return '-'.join([ieee_addr, cmd_switch[cmd], arg1, arg2])
 
     def update_unconn_db(self, _manifest):
@@ -119,8 +121,9 @@ class ZNetwork:
         if args is None:
             return  # poorly formatted
         command = self.build_command(cmd, device, args['arg1'], args['arg2'])
-        self.sock.send(command)
-        message = repr(self.sock.recv(1024))
+        #self.sock.send(command)
+        message = self.sock.recv(1024)
+        print message
         self.receive_non_commission_msg(message)
         # Send a commission request, just because
         self.update_commissions_listener(None)

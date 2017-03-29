@@ -263,10 +263,10 @@ class Database(object):
         )
         if new_name is not None:
             ctrl_eids = self.ctrlTable.update(
-                {'name': new_name}, control.eid)
+                {'name': new_name}, eids=[control.eid])
         if new_value is not None:
             ctrl_eids = self.ctrlTable.update(
-                {'value': new_value}, control.eid)
+                {'value': new_value}, eids=[control.eid])
 
         if ctrl_eids == []:
             return -1

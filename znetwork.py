@@ -126,7 +126,6 @@ class ZNetwork:
         print message
         self.receive_non_commission_msg(message)
         # Send a commission request, because why not
-        self.update_commissions_listener(None)
         return
 
     def update_commissions_listener(self, sender):

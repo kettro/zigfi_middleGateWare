@@ -123,8 +123,8 @@ class CommandInterpreter:
         if(cmd == 'dev'):
             return
         if(cmd == 'devdata'):
-            self.db.update_devdata(payload)
-            return
+            valid = self.db.update_devdata(payload)
+            response['valid'] = valid
         return response
 
     def __destroy(self, cmd, payload):

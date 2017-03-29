@@ -261,6 +261,9 @@ class Database(object):
                 'value': new_value
             }
         )
+        print "New name = ", new_name
+        print "New value = ", new_value
+        print "ctrl_eids = ", ctrl_eids
         if new_name is not None:
             ctrl_eids = self.ctrlTable.update(
                 {'name': new_name}, eids=[control.eid])

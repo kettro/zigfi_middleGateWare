@@ -24,7 +24,6 @@ class Database(object):
         self.id_sig = "Database"
         self.unconn_sig = "unconn_db_sig"
         self.val_sig = "db_val_sig"
-        self.zn = ZNetwork(self.unconn_sig, self.val_sig)
         dispatcher.connect(
                 self.update_unconn_db,
                 signal=self.unconn_sig,
@@ -33,10 +32,11 @@ class Database(object):
                 self.update_dev_value,
                 signal=self.val_sig,
                 sender=dispatcher.Any)
+        self.zn = ZNetwork(self.unconn_sig, self.val_sig)
 
     def update_unconn_db(self, sender, manifest):
         # Updating the database with the list of devices in the network
-        print "Updating Unconn DB"
+        print "Updating Unconn DB, inside db"
         db_dev_list = self.devTable.all()
         configured = []
         unconfigured = []

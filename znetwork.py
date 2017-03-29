@@ -19,8 +19,6 @@ class ZNetwork:
         # Set up the Socket layer
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.sock.connect('../servers/socket_IPC')
-        # Send a commission!
-        self.update_commissions_listener(None)
         # Connect up the signals to the listeners
         dispatcher.connect(
             self.update_devdata_listener,
@@ -32,7 +30,8 @@ class ZNetwork:
             signal=self.update_commissions_sig,
             sender=dispatcher.Any
         )
-        # Set up the Socket layer and communications
+        # Send a commission!
+        self.update_commissions_listener(None)
         return
 
     def build_args(self, cmd, arg1, arg2='0'):

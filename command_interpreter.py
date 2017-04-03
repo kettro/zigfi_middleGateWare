@@ -50,8 +50,6 @@ class CommandInterpreter:
             payload: arguments passed along with the cmd, specific to the cmd.
         Returns: Response dict to be added as the response in the reply packet
         '''
-        # Purely metadata: not actually doing anything to the network
-        # When implemented; creating a device may change the grouping
         response = payload
         if(cmd == 'grp'):
             # TODO: Search the db for the grp_name: invalid if not empty
@@ -80,7 +78,6 @@ class CommandInterpreter:
         if(cmd == 'connman'):
             # Read Manifest of all connected devices
             # Query the network for currently connected items
-
             response['manifest'] = self.db.read_connman()
         elif(cmd == 'unconnman'):
             response['manifest'] = self.db.read_unconnman()

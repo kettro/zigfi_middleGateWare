@@ -10,6 +10,10 @@ class ZNetwork:
     # See the readme for more details
 
     def __init__(self, unconn_sig, val_sig):
+        '''
+        Initialize the Network
+        Set up IPC and initialize the socket layer
+        '''
         # Define Signals
         self.id_sig = "ZNetwork"
         self.update_devdata_sig = "update_devdata"
@@ -35,7 +39,13 @@ class ZNetwork:
         return
 
     def build_args(self, cmd, arg1, arg2='0'):
-        # Format the arguments of commands
+        '''
+        Format the arguments of commands
+        Parmas:
+            cmd: Command to be sent
+            arg1: first argument, often the only argument
+            arg2: rarely used, defaults 0
+        '''
         arg_switch = {
             'ON/OFF': {
                 'arg1': str(int(arg1) & 0x01),
@@ -49,7 +59,14 @@ class ZNetwork:
         return arg_switch.get(cmd)
 
     def build_command(self, cmd, ieee_addr='-1', arg1='0', arg2='0'):
-        # Format the commands to be sent to the GW
+        '''
+        Encode the Commands for sending to the GW application
+        params:
+            cmd: Command to be executed, required
+            ieee_addr: Unique Address identifier for the specific device
+            arg1: First argument
+            arg2: second argument, only used in some cases (Hue)
+        '''
         cmd_switch = {
             'ON/OFF': '0',
             'LEVEL': '1',
@@ -83,6 +100,7 @@ class ZNetwork:
 
     def update_values_db(self, _devdata):
         '''
+        Send a signal to the Db to update the devdata values
         params:
             _devdata: Dict with fields:
                 id
@@ -129,6 +147,10 @@ class ZNetwork:
         return
 
     def update_commissions_listener(self, sender):
+        '''
+        Listener for commissions Updates
+        Connects to Socket layer to send a command to the Network
+        '''
         # Call the commission update
         print "Updating Commissions"
         command_string = self.build_command('PERMIT_JOIN')
@@ -155,6 +177,12 @@ class ZNetwork:
         self.update_unconn_db(ep_dict)
 
     def receive_non_commission_msg(self, msg):
+        '''
+        Parse a message from the network that is not a commission
+        NOTE: Commissions are handled seperately
+        Params:
+            msg: formatted string of a message from the Network
+        '''
         fields = msg.split('|')
         msg_dict = {}
         for field in fields:

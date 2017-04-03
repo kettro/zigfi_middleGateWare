@@ -35,6 +35,10 @@ class Database(object):
         self.zn = ZNetwork(self.unconn_sig, self.val_sig)
 
     def update_unconn_db(self, sender, manifest):
+        '''
+        Signal Received from ZNetwork
+        Update the database with the results of a read_unconnman
+        '''
         # Updating the database with the list of devices in the network
         print "Updating Unconn DB, inside db"
         db_dev_list = self.devTable.all()
@@ -91,6 +95,9 @@ class Database(object):
         return
 
     def send_commission_request(self):
+        '''
+        Use PyDispatcher to send a commissin request to the ZNetwork
+        '''
         print "Sending  Commission Request to the ZNetwork"
         dispatcher.send(
             signal=self.zn.update_commissions_sig,
@@ -187,7 +194,9 @@ class Database(object):
         return self.devTable.search(where('grp_name') == group_name)
 
     def read_ctrlman(self, group, device):
-        # Returns all controls associated with a given device in a given group
+        '''
+        Return all controls associated with a given device in a given group
+        '''
         return self.ctrlTable.search(
                 (where('dev_name') == device) &
                 (where('grp_name') == group)
@@ -234,6 +243,10 @@ class Database(object):
 
     # UPDATE
     def update_devdata(self, payload):
+        '''
+        Update the data stored in a single control of a device
+        Return -1 if an error; else the EID of the device.
+        '''
         # assume that payload is a Dict, received from the WC
         grp = payload['grp_name']
         dev = payload['dev_name']
